@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  gates:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        node: [22, 24]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+        env:
+          GH_TOKEN: ${{ secrets.QRG_READ_TOKEN || github.token }}
+      - run: npm run build
+      - name: Committed dist matches the build
+        run: git diff --exit-code -- dist
+      - name: CLI smoke test from the built bin
+        run: node dist/cli.js sources
+
+  runtime-node20:
+    name: Built CLI on Node 20 (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm pack
+      - run: npm install -g ./google-spec-research-0.1.0.tgz
+      - run: gspec sources
+      - name: Verified quote on a live Search Central page
+        run: gspec quote https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics "Google processes JavaScript web apps in three main phases"
+      - name: Non-Google source is rejected with exit 2
+        shell: bash
+        run: |
+          set +e
+          gspec fetch https://moz.com/learn/seo
+          test $? -eq 2

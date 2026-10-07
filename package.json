@@ -1,0 +1,45 @@
+{
+  "name": "google-spec-research",
+  "version": "0.1.0",
+  "description": "Answer SEO/GEO questions only from official Google sources: whitelist-enforced fetch, verbatim quote verification with text-fragment deep links, Quality Rater Guidelines search.",
+  "license": "MIT",
+  "author": "Franz Enzenhofer",
+  "type": "module",
+  "bin": {
+    "gspec": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/franzenzenhofer/google-spec-research.git"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "gates": "npm run typecheck && npm run lint && npm run test && npm run build"
+  },
+  "dependencies": {
+    "linkedom": "^0.18.13",
+    "turndown": "^7.2.4",
+    "turndown-plugin-gfm": "^1.0.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.6.4",
+    "@types/turndown": "^5.0.6",
+    "eslint": "^10.12.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.1",
+    "vitest": "^5.0.3"
+  }
+}

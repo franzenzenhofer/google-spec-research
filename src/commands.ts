@@ -1,6 +1,6 @@
 import { readOfficialPage, type OfficialPage } from "./page.js";
 import { loadQrg } from "./qrg-data.js";
-import { searchQrg } from "./qrg-search.js";
+import { searchQrg, type QrgPassage } from "./qrg-search.js";
 import { verifyQuote } from "./quote.js";
 import { searchOfficial } from "./search.js";
 import { ENTRY_PAGES, SOURCE_RULES, VALIDATORS } from "./sources.js";
@@ -64,18 +64,25 @@ export async function searchCommand(query: string, io: Output): Promise<number> 
   return EXIT.ok;
 }
 
+function passageHeading(passage: QrgPassage): string {
+  const { section } = passage;
+  const label = section.number === "" ? `"${section.title}"` : `Section ${section.number} "${section.title}"`;
+  if (passage.page !== undefined) return `${label}, PDF page ${passage.page}`;
+  const range = section.pageStart === section.pageEnd ? `${section.pageStart}` : `${section.pageStart}-${section.pageEnd}`;
+  return `${label}, PDF pages ${range} (section range; link opens the first page)`;
+}
+
 export async function qrgCommand(query: string, io: Output): Promise<number> {
-  const doc = await loadQrg();
-  const passages = searchQrg(doc, query);
-  io.out(`Search Quality Rater Guidelines, version ${doc.version} (PDF sha256 ${doc.sha256.slice(0, 12)})`);
+  const corpus = await loadQrg();
+  const passages = searchQrg(corpus, query);
+  io.out(`Search Quality Rater Guidelines, version ${corpus.doc.version}, official PDF ${corpus.doc.sourceUrl}`);
   io.out("Raters' guidelines describe how raters evaluate pages. They are not ranking signals.\n");
   if (passages.length === 0) {
     io.err(`No QRG passage contains all of: ${query}`);
     return EXIT.notFound;
   }
   for (const passage of passages) {
-    const pages = passage.section.pageStart === passage.section.pageEnd ? `${passage.section.pageStart}` : `${passage.section.pageStart}-${passage.section.pageEnd}`;
-    io.out(`Section ${passage.section.number} "${passage.section.title}", PDF page ${pages}`);
+    io.out(passageHeading(passage));
     io.out(`  ${passage.link}`);
     io.out(`  > ${passage.text}\n`);
   }

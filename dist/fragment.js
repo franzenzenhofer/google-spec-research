@@ -14,7 +14,7 @@ function isBoundary(haystack, index) {
         return true;
     return !(WORD_CHAR.test(haystack.charAt(index - 1)) && WORD_CHAR.test(haystack.charAt(index)));
 }
-/** First case-insensitive, word-bounded occurrence of term at or after from, not crossing a block break. */
+/** First case-insensitive, word-bounded occurrence of term at or after from. A term without "\n" never crosses a block break. */
 export function findTerm(haystack, term, from) {
     const lowerHay = haystack.toLowerCase();
     const lowerTerm = term.toLowerCase();
@@ -37,55 +37,62 @@ export function resolveDirective(text, startTerm, endTerm) {
     const endAt = findTerm(text, endTerm, start + startTerm.length);
     return endAt === -1 ? undefined : { start, end: endAt + endTerm.length };
 }
-function sameText(a, b) {
-    const fold = (s) => s.replace(/\s+/g, " ").trim().toLowerCase();
-    return fold(a) === fold(b);
+/** First occurrence of the whole quote: where a correct directive must land. */
+function locateTarget(text, quote) {
+    const start = findTerm(text, quote, 0);
+    return start === -1 ? undefined : { start, end: start + quote.length };
 }
-function edgeCandidates(quote) {
-    const blocks = quote.split("\n");
-    const first = (blocks[0] ?? "").split(" ").filter(Boolean);
-    const last = (blocks[blocks.length - 1] ?? "").split(" ").filter(Boolean);
-    return { first, last };
+function words(block) {
+    return block.split(" ").filter(Boolean);
 }
-function tryRange(text, quote, startTerm, endTerm) {
-    const hit = resolveDirective(text, startTerm, endTerm);
-    return hit !== undefined && sameText(text.slice(hit.start, hit.end), quote);
-}
-function rangeDirective(text, quote) {
-    const { first, last } = edgeCandidates(quote);
-    const singleBlock = !quote.includes("\n");
-    const limit = Math.max(first.length, last.length);
-    for (let words = MIN_EDGE_WORDS; words <= limit; words++) {
-        const startWords = first.slice(0, Math.min(words, first.length));
-        const endWords = last.slice(Math.max(0, last.length - words));
-        // Edges covering nearly the whole quote are no shorter than the quote: the exact form is used instead.
-        if (singleBlock && startWords.length + endWords.length > first.length - 2)
-            break;
-        const startTerm = startWords.join(" ");
-        const endTerm = endWords.join(" ");
-        if (tryRange(text, quote, startTerm, endTerm))
-            return `${encodeTerm(startTerm)},${encodeTerm(endTerm)}`;
+/** Fewest leading words whose first occurrence is the target start. */
+function minimalStart(text, edge, target) {
+    for (let count = Math.min(MIN_EDGE_WORDS, edge.length); count <= edge.length; count++) {
+        const term = edge.slice(0, count).join(" ");
+        if (findTerm(text, term, 0) === target.start)
+            return term;
     }
     return undefined;
+}
+/** Fewest trailing words whose first occurrence after the start term ends exactly at the target end. */
+function minimalEnd(text, edge, target, from) {
+    for (let count = Math.min(MIN_EDGE_WORDS, edge.length); count <= edge.length; count++) {
+        const term = edge.slice(edge.length - count).join(" ");
+        const at = findTerm(text, term, from);
+        if (at !== -1 && at + term.length === target.end)
+            return term;
+    }
+    return undefined;
+}
+function rangeDirective(text, quote, target) {
+    const blocks = quote.split("\n");
+    const startTerm = minimalStart(text, words(blocks[0] ?? ""), target);
+    if (startTerm === undefined)
+        return undefined;
+    const endTerm = minimalEnd(text, words(blocks[blocks.length - 1] ?? ""), target, target.start + startTerm.length);
+    if (endTerm === undefined)
+        return undefined;
+    // Edges covering nearly a single-block quote are no shorter than the quote: the exact form is used instead.
+    const edgeWords = words(startTerm).length + words(endTerm).length;
+    if (blocks.length === 1 && edgeWords > words(quote).length - 2)
+        return undefined;
+    return `${encodeTerm(startTerm)},${encodeTerm(endTerm)}`;
 }
 /**
  * Build the directive for a quote exactly as it appears in the page text (with "\n" at block breaks).
- * Returns undefined when no directive would highlight this exact passage first.
+ * Returns undefined when no directive would land on this passage.
  */
 export function buildDirective(text, pageQuote) {
-    const wordCount = pageQuote.split(/\s+/).filter(Boolean).length;
+    const target = locateTarget(text, pageQuote);
+    if (!target)
+        return undefined;
     const singleBlock = !pageQuote.includes("\n");
-    if (singleBlock && wordCount <= EXACT_MAX_WORDS) {
-        const hit = resolveDirective(text, pageQuote);
-        if (hit && sameText(text.slice(hit.start, hit.end), pageQuote))
-            return encodeTerm(pageQuote);
-    }
-    const range = rangeDirective(text, pageQuote);
+    if (singleBlock && words(pageQuote).length <= EXACT_MAX_WORDS)
+        return encodeTerm(pageQuote);
+    const range = rangeDirective(text, pageQuote, target);
     if (range)
         return range;
-    if (singleBlock && resolveDirective(text, pageQuote))
-        return encodeTerm(pageQuote);
-    return undefined;
+    return singleBlock ? encodeTerm(pageQuote) : undefined;
 }
 /** Append a text directive to a URL, keeping any existing #anchor. */
 export function withDirective(url, directive) {

@@ -1,8 +1,8 @@
 import { parseHTML } from "linkedom";
 import { blockText } from "./text.js";
 
-/** Main-content containers, most specific first: devsite (Search Central, web.dev, Chrome), Help Center, generic. */
-const MAIN_SELECTORS = [".devsite-article-body", ".article-content-container", "main article", "article", "main", "body"];
+/** Main-content containers, most specific first: devsite (Search Central, web.dev, Chrome), Help Center, schema.org, generic. */
+const MAIN_SELECTORS = [".devsite-article-body", ".article-content-container", "#mainContent", "main article", "article", "main", "body"];
 
 /** Never rendered as text, so a browser cannot match a text fragment inside it. */
 const INVISIBLE_SELECTORS = ["script", "style", "noscript", "template", "[hidden]"];

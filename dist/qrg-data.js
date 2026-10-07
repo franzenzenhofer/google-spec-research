@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { cached } from "./cache.js";
 import { fetchOfficial } from "./http.js";
 import { QRG_REPO } from "./sources.js";
-export const QRG_JSON_URL = `https://raw.githubusercontent.com/${QRG_REPO}/main/json/qrg.json`;
+export const QRG_RAW_BASE = `https://raw.githubusercontent.com/${QRG_REPO}/main`;
+export const QRG_JSON_URL = `${QRG_RAW_BASE}/json/qrg.json`;
 function fail(what) {
     throw new Error(`qrg.json does not match the contract: ${what}`);
 }
@@ -18,9 +19,9 @@ function parseSection(value, index) {
         fail(`sections[${index}] strings`);
     if (typeof level !== "number" || typeof pageStart !== "number" || typeof pageEnd !== "number")
         fail(`sections[${index}] numbers`);
-    if (typeof number !== "string" && typeof number !== "number")
+    if (typeof number !== "string" && typeof number !== "number" && number !== null)
         fail(`sections[${index}].number`);
-    return { id, number: String(number), title, level, pageStart, pageEnd, text };
+    return { id, number: number === null ? "" : String(number), title, level, pageStart, pageEnd, text };
 }
 /** Validate untrusted JSON against the contract; fail loudly on any drift. */
 export function parseQrg(value) {
@@ -39,19 +40,30 @@ const githubToken = (url) => {
     return token && url.hostname === "raw.githubusercontent.com" ? { authorization: `token ${token}` } : {};
 };
 async function loadRemote() {
-    const page = await fetchOfficial(QRG_JSON_URL, githubToken);
-    return parseQrg(JSON.parse(page.body));
+    const [json, markdown] = await Promise.all([
+        fetchOfficial(QRG_JSON_URL, githubToken),
+        fetchOfficial(`${QRG_RAW_BASE}/markdown/qrg.md`, githubToken),
+    ]);
+    return { doc: parseQrg(JSON.parse(json.body)), markdown: markdown.body };
+}
+async function loadLocal(dir) {
+    const [json, markdown] = await Promise.all([
+        readFile(join(dir, "json", "qrg.json"), "utf8"),
+        readFile(join(dir, "markdown", "qrg.md"), "utf8"),
+    ]);
+    return { doc: parseQrg(JSON.parse(json)), markdown };
 }
 /** Load the QRG: GSPEC_QRG_DIR (a local clone) wins, otherwise the published mirror, cached for a day. */
 export async function loadQrg() {
     const localDir = process.env.GSPEC_QRG_DIR;
     if (localDir)
-        return parseQrg(JSON.parse(await readFile(join(localDir, "json", "qrg.json"), "utf8")));
+        return loadLocal(localDir);
     try {
-        return parseQrg(await cached("qrg-v1", loadRemote));
+        const corpus = await cached("qrg-v2", loadRemote);
+        return { doc: parseQrg(corpus.doc), markdown: corpus.markdown };
     }
     catch (error) {
         const reason = error instanceof Error ? error.message : String(error);
-        throw new Error(`Could not load the Quality Rater Guidelines from ${QRG_JSON_URL} (${reason}). Set GSPEC_QRG_DIR to a local clone of https://github.com/${QRG_REPO}.`, { cause: error });
+        throw new Error(`Could not load the Quality Rater Guidelines from ${QRG_RAW_BASE} (${reason}). Set GSPEC_QRG_DIR to a local clone of https://github.com/${QRG_REPO}.`, { cause: error });
     }
 }

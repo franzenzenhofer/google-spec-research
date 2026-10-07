@@ -60,18 +60,25 @@ export async function searchCommand(query, io) {
         io.out(`${hit.entry.title}\n  ${hit.entry.url}`);
     return EXIT.ok;
 }
+function passageHeading(passage) {
+    const { section } = passage;
+    const label = section.number === "" ? `"${section.title}"` : `Section ${section.number} "${section.title}"`;
+    if (passage.page !== undefined)
+        return `${label}, PDF page ${passage.page}`;
+    const range = section.pageStart === section.pageEnd ? `${section.pageStart}` : `${section.pageStart}-${section.pageEnd}`;
+    return `${label}, PDF pages ${range} (section range; link opens the first page)`;
+}
 export async function qrgCommand(query, io) {
-    const doc = await loadQrg();
-    const passages = searchQrg(doc, query);
-    io.out(`Search Quality Rater Guidelines, version ${doc.version} (PDF sha256 ${doc.sha256.slice(0, 12)})`);
+    const corpus = await loadQrg();
+    const passages = searchQrg(corpus, query);
+    io.out(`Search Quality Rater Guidelines, version ${corpus.doc.version}, official PDF ${corpus.doc.sourceUrl}`);
     io.out("Raters' guidelines describe how raters evaluate pages. They are not ranking signals.\n");
     if (passages.length === 0) {
         io.err(`No QRG passage contains all of: ${query}`);
         return EXIT.notFound;
     }
     for (const passage of passages) {
-        const pages = passage.section.pageStart === passage.section.pageEnd ? `${passage.section.pageStart}` : `${passage.section.pageStart}-${passage.section.pageEnd}`;
-        io.out(`Section ${passage.section.number} "${passage.section.title}", PDF page ${pages}`);
+        io.out(passageHeading(passage));
         io.out(`  ${passage.link}`);
         io.out(`  > ${passage.text}\n`);
     }

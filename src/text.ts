@@ -10,7 +10,8 @@ const ELEMENT_NODE = 1;
 
 function collect(node: Node, parts: string[]): void {
   if (node.nodeType === TEXT_NODE) {
-    parts.push(node.textContent ?? "");
+    // Source line breaks inside a text node render as plain spaces; only block elements break blocks.
+    parts.push((node.textContent ?? "").replace(/\s+/g, " "));
     return;
   }
   if (node.nodeType !== ELEMENT_NODE) return;

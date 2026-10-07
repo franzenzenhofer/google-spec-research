@@ -8,7 +8,8 @@ const TEXT_NODE = 3;
 const ELEMENT_NODE = 1;
 function collect(node, parts) {
     if (node.nodeType === TEXT_NODE) {
-        parts.push(node.textContent ?? "");
+        // Source line breaks inside a text node render as plain spaces; only block elements break blocks.
+        parts.push((node.textContent ?? "").replace(/\s+/g, " "));
         return;
     }
     if (node.nodeType !== ELEMENT_NODE)

@@ -1,3 +1,4 @@
+import { pageIndex, passageKey } from "./qrg-pages.js";
 import { tokenize } from "./search.js";
 const MIN_PASSAGE_CHARS = 40;
 /** Split section text into paragraphs (blank-line separated, falling back to single lines). */
@@ -26,18 +27,21 @@ function passageScore(passage, terms, section) {
     return tokens.join(" ").includes(phrase) && terms.length > 1 ? score + 15 : score;
 }
 /** Rank QRG paragraphs for a query. Every query term must appear in the passage or its section title. */
-export function searchQrg(doc, query, limit = 8) {
+export function searchQrg(corpus, query, limit = 8) {
     const terms = tokenize(query);
     if (terms.length === 0)
         return [];
+    const pages = pageIndex(corpus.markdown);
     const hits = [];
-    for (const section of doc.sections) {
+    for (const section of corpus.doc.sections) {
         const titleTokens = new Set(tokenize(section.title));
         for (const text of paragraphs(section.text)) {
             const tokens = new Set(tokenize(text));
             if (!terms.every((term) => tokens.has(term) || titleTokens.has(term)))
                 continue;
-            hits.push({ section, text, score: passageScore(text, terms, section), link: pageLink(doc.sourceUrl, section.pageStart) });
+            const page = pages.get(passageKey(text));
+            const link = pageLink(corpus.doc.sourceUrl, page ?? section.pageStart);
+            hits.push({ section, text, score: passageScore(text, terms, section), page, link });
         }
     }
     return hits.sort((a, b) => b.score - a.score).slice(0, limit);

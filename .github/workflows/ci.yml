@@ -24,8 +24,6 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm test
-        env:
-          GH_TOKEN: ${{ secrets.QRG_READ_TOKEN || github.token }}
       - run: npm run build
       - name: Committed dist matches the build
         run: git diff --exit-code -- dist

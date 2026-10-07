@@ -71,7 +71,7 @@ Last updated: 2025-09-02 UTC
 Link: https://web.dev/articles/inp#:~:text=An%20INP%20below,has%20good%20responsiveness.
 ```
 
-Open the link: the browser scrolls to the sentence and highlights it. A sentence that is not on the page exits with 1:
+Open the link: the browser scrolls to the sentence and highlights it. (A few long pages shift their layout after loading images; the highlight is still there, a short scroll away.) When the sentence occurs more than once on the page, `gspec quote` prints a `WARNING` with the count, because the link highlights only the first occurrence: quote more words until it is unique. A sentence that is not on the page exits with 1:
 
 ```console
 $ gspec quote https://developers.google.com/search/docs/crawling-indexing/javascript/javascript-seo-basics "Googlebot clicks every cookie banner button."

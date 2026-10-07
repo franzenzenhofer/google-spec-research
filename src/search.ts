@@ -15,9 +15,10 @@ function stem(token: string): string {
   return token;
 }
 
-/** Lowercase, plural-folded word tokens, stop words removed. */
+/** Lowercase, plural-folded word tokens, stop words removed. Letter-hyphen acronyms fold: "E-E-A-T" is "eeat". */
 export function tokenize(text: string): string[] {
   return text
+    .replace(/(?<![\p{L}\p{N}])(?:\p{L}-)+\p{L}(?![\p{L}\p{N}])/gu, (acronym) => acronym.replace(/-/g, ""))
     .toLowerCase()
     .split(/[^\p{L}\p{N}]+/u)
     .filter((token) => token.length > 1 && !STOP_WORDS.has(token))

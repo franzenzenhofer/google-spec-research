@@ -27,7 +27,8 @@ Everything else (SEO blogs, forums, Stack Overflow, social posts, AI answers) is
 2. `gspec fetch <url>` and READ the relevant section. Note `Last updated`, `Published`, and `Redirected from`.
 3. For anything that may have changed, also fetch https://developers.google.com/search/updates (the documentation changelog).
 4. Copy the sentence verbatim from the fetched text, then run `gspec quote <url> "<sentence>"`. Use only the `Link:` it prints. Exit 1 means the text is not on the page: fix the quote, never hand-build a `#:~:text=` link.
-5. For the Quality Rater Guidelines run `gspec qrg <terms>` and quote the passage with its `#page=N` link.
+5. If `gspec quote` prints `WARNING: this text appears N times`, the sentence is shared by several places (for example the same note under two properties). Quote more words, such as the sentence before it, until the warning is gone. Never attribute a repeated sentence to one place.
+6. For the Quality Rater Guidelines run `gspec qrg <terms>` and quote the passage with its `#page=N` link.
 
 ## Answer format
 
@@ -69,6 +70,7 @@ Rules:
 | "Google says X" with no quote | Either a verified quote or "Not documented by Google" |
 | Citing a 2019 blog post as current | Check `Last updated` and the changelog; prefer current docs |
 | Treating QRG as ranking factors | Say they are rater instructions, not ranking signals |
+| Citing a sentence that appears under several headings | Extend the quote until `gspec quote` prints no `WARNING` |
 
 ## Worked examples
 

@@ -48,6 +48,9 @@ export async function quoteCommand(url, quote, io) {
         io.out(line);
     if (!result.highlightVerified)
         io.err("Note: no text fragment resolves uniquely to this passage; the link points to the page only.");
+    if (result.occurrences > 1) {
+        io.err(`WARNING: this text appears ${result.occurrences} times on the page; the link highlights the first one. Quote more words (for example the sentence before it) until it is unique.`);
+    }
     return EXIT.ok;
 }
 export async function searchCommand(query, io) {

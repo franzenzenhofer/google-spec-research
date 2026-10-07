@@ -37,6 +37,17 @@ describe("quote (live)", () => {
     expect(io.stdout.join("\n")).toMatch(/Link: https:\/\/developers\.google\.com\/.+#:~:text=Googlebot%20queues/);
   });
 
+  it("CLI warns when the quote is not unique on the page, and not when it is", async () => {
+    const article = "https://developers.google.com/search/docs/appearance/structured-data/article";
+    const repeated = "doesn't show a warning for this property, as it's only recommended if you decide that it's applicable to your site.";
+    const ambiguous = collector();
+    expect(await run(["quote", article, repeated], ambiguous)).toBe(0);
+    expect(ambiguous.stderr.join("\n")).toMatch(/WARNING: this text appears \d+ times/);
+    const unique = collector();
+    expect(await run(["quote", article, `Add the datePublished property if you want to provide more accurate date information to Google. The Rich Results Test ${repeated}`], unique)).toBe(0);
+    expect(unique.stderr.join("\n")).not.toContain("WARNING");
+  });
+
   it("CLI exits 1 for a sentence that is not on the page", async () => {
     const io = collector();
     expect(await run(["quote", JS_BASICS, FAKE], io)).toBe(1);

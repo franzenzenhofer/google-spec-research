@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { resolveDirective } from "./fragment.js";
 import { fetchOfficial } from "./http.js";
 import { readOfficialPage } from "./page.js";
+import { countOccurrences } from "./quote.js";
 import { QRG_REPO, VALIDATORS } from "./sources.js";
 import { checkUrl } from "./whitelist.js";
 
@@ -29,11 +30,14 @@ describe("deep links in README and skill docs (live)", () => {
     expect(FRAGMENT_URLS.length).toBeGreaterThan(10);
   });
 
-  it.each(FRAGMENT_URLS)("%s resolves to its quoted passage", async (link) => {
+  it.each(FRAGMENT_URLS)("%s resolves to a passage that is unique on the page", async (link) => {
     const [base, directive] = link.split("#:~:text=");
     const page = await readOfficialPage(base ?? "");
     const [start, end] = (directive ?? "").split(",").map(decodeURIComponent);
-    expect(resolveDirective(page.fullText, start ?? "", end)).toBeDefined();
+    const hit = resolveDirective(page.fullText, start ?? "", end);
+    expect(hit).toBeDefined();
+    const passage = page.fullText.slice(hit?.start ?? 0, hit?.end ?? 0);
+    expect(countOccurrences(page.text, passage)).toBe(1);
   });
 
   it.each(SOURCE_URLS)("%s is whitelisted or a validator, and live", async (url) => {

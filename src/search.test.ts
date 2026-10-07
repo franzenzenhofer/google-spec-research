@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { run } from "./cli.js";
-import { searchOfficial } from "./search.js";
+import { searchOfficial, tokenize } from "./search.js";
 import { collector } from "./test-support/collect.js";
 import { checkUrl } from "./whitelist.js";
 
@@ -19,6 +19,12 @@ describe("search (live index from official entry pages)", () => {
     const hits = await searchOfficial("structured data");
     expect(hits.length).toBeGreaterThan(3);
     for (const hit of hits) expect(checkUrl(hit.entry.url).ok).toBe(true);
+  });
+
+  it("folds hyphenated acronyms so E-E-A-T is searchable", async () => {
+    expect(tokenize("What is E-E-A-T and YMYL?")).toEqual(["eeat", "ymyl"]);
+    const hits = await searchOfficial("E-E-A-T");
+    expect(hits.length).toBeGreaterThan(0);
   });
 
   it("CLI exits 1 when nothing matches", async () => {

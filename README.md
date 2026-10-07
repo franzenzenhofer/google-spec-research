@@ -24,7 +24,7 @@ Everything else (SEO blogs, forums, Stack Overflow, social posts, AI answers) is
 ### macOS and Linux
 
 ```bash
-npm install -g github:franzenzenhofer/google-spec-research
+npm install -g --allow-git=root github:franzenzenhofer/google-spec-research
 gspec --version
 
 # Claude skill: symlink it from the installed package
@@ -35,13 +35,15 @@ ln -s "$(npm root -g)/google-spec-research/skills/google-spec-research" ~/.claud
 ### Windows (PowerShell)
 
 ```powershell
-npm install -g github:franzenzenhofer/google-spec-research
+npm install -g --allow-git=root github:franzenzenhofer/google-spec-research
 gspec --version
 
 # Claude skill: a directory junction needs no admin rights
 New-Item -ItemType Directory -Force "$env:USERPROFILE\.claude\skills" | Out-Null
 New-Item -ItemType Junction -Path "$env:USERPROFILE\.claude\skills\google-spec-research" -Target "$(npm root -g)\google-spec-research\skills\google-spec-research"
 ```
+
+`--allow-git=root` is needed from npm 12 on, which refuses git installs by default; older npm versions ignore the flag with a warning.
 
 Prefer a plain copy? Copy the folder `skills/google-spec-research` into `~/.claude/skills/` (macOS, Linux) or `%USERPROFILE%\.claude\skills\` (Windows). Re-copy after updates.
 

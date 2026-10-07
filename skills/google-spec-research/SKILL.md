@@ -13,7 +13,7 @@ Answer like a careful spec lawyer: only from what Google itself publishes, every
 
 ## Setup
 
-`gspec --version` must work. If it does not: `npm install -g github:franzenzenhofer/google-spec-research` (Node 20 or newer, macOS, Linux or Windows).
+`gspec --version` must work. If it does not: `npm install -g --allow-git=root github:franzenzenhofer/google-spec-research` (Node 20 or newer, macOS, Linux or Windows).
 
 ## Accepted sources
 
